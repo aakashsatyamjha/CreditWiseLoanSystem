@@ -32,16 +32,16 @@ def load_and_train():
 
     df2 = df.copy().drop("Applicant_ID", axis=1, errors="ignore")
 
+    # Fix target first before encoding
+    df2["Loan_Approved"] = df2["Loan_Approved"].astype(str).str.strip()
+    df2 = df2[df2["Loan_Approved"].isin(["Y", "N", "0", "1"])]
+    df2["Loan_Approved"] = df2["Loan_Approved"].map({"Y": 1, "N": 0, "1": 1, "0": 0})
+
     le = LabelEncoder()
     enc_map = {}
     for col in df2.select_dtypes("object").columns:
         df2[col] = le.fit_transform(df2[col].astype(str))
         enc_map[col] = dict(zip(le.classes_, le.transform(le.classes_)))
-
-    # Clean target — drop any rows where Loan_Approved is not 0 or 1
-    df2 = df2.dropna(subset=["Loan_Approved"])
-    df2["Loan_Approved"] = df2["Loan_Approved"].astype(int)
-    df2 = df2[df2["Loan_Approved"].isin([0, 1])]
 
     X = df2.drop("Loan_Approved", axis=1)
     y = df2["Loan_Approved"]
@@ -63,7 +63,7 @@ def load_and_train():
         fpr, tpr, _ = roc_curve(y_test, yprob)
         results[name] = {
             "model": m, "accuracy": accuracy_score(y_test, yp),
-            "roc_auc": roc_auc_score(y_test, yprob, average="binary"),
+            "roc_auc": roc_auc_score(y_test, yprob),
             "cm": confusion_matrix(y_test, yp), "fpr": fpr, "tpr": tpr,
         }
     return df, X, y, scaler, enc_map, results
