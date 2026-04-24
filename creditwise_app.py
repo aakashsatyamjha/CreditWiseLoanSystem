@@ -32,16 +32,15 @@ def load_and_train():
 
     df2 = df.copy().drop("Applicant_ID", axis=1, errors="ignore")
 
-    # Fix target first before encoding
-    df2["Loan_Approved"] = df2["Loan_Approved"].astype(str).str.strip()
-    df2 = df2[df2["Loan_Approved"].isin(["Y", "N", "0", "1"])]
-    df2["Loan_Approved"] = df2["Loan_Approved"].map({"Y": 1, "N": 0, "1": 1, "0": 0})
-
     le = LabelEncoder()
     enc_map = {}
     for col in df2.select_dtypes("object").columns:
         df2[col] = le.fit_transform(df2[col].astype(str))
         enc_map[col] = dict(zip(le.classes_, le.transform(le.classes_)))
+
+    # Ensure target is binary (0/1) — works regardless of original values
+    target_vals = sorted(df2["Loan_Approved"].unique())
+    df2["Loan_Approved"] = (df2["Loan_Approved"] == target_vals[-1]).astype(int)
 
     X = df2.drop("Loan_Approved", axis=1)
     y = df2["Loan_Approved"]
