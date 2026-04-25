@@ -74,7 +74,7 @@ def load_and_preprocess():
     encoded_df = pd.DataFrame(encoded, columns=ohe.get_feature_names_out(ohe_cols), index=df.index)
     df = pd.concat([df.drop(columns=ohe_cols), encoded_df], axis=1)
 
-    # Feature Engineering  (final model setup from notebook)
+    # Feature Engineering
     df["DTI_Ratio_sq"]    = df["DTI_Ratio"] ** 2
     df["Credit_Score_sq"] = df["Credit_Score"] ** 2
 
@@ -188,14 +188,14 @@ elif page == "EDA":
         fig, ax = plt.subplots(figsize=(5, 4))
         sns.histplot(data=df_raw, x="Credit_Score", hue="Loan_Approved",
                      bins=20, multiple="dodge", ax=ax,
-                     palette={0: "#ef5350", 1: "#66bb6a"})
+                     palette=["#ef5350", "#66bb6a"])
         st.pyplot(fig)
 
     with col4:
         st.subheader("Savings by Approval")
         fig, ax = plt.subplots(figsize=(5, 4))
         sns.boxplot(data=df_raw, x="Loan_Approved", y="Savings", ax=ax,
-                    palette={0: "#ef5350", 1: "#66bb6a"})
+                    palette=["#ef5350", "#66bb6a"])
         ax.set_xticklabels(["Rejected", "Approved"])
         st.pyplot(fig)
 
@@ -212,13 +212,11 @@ elif page == "EDA":
 elif page == "Models":
     st.title("🤖 Model Performance")
 
-    # Metrics table
     metrics_df = pd.DataFrame(results).T[["Accuracy", "Precision", "Recall", "F1 Score"]]
     st.dataframe(metrics_df.style.highlight_max(axis=0, color="#1b5e20"), use_container_width=True)
 
     st.markdown("---")
 
-    # Bar chart comparison
     st.subheader("Metric Comparison")
     fig, ax = plt.subplots(figsize=(10, 4))
     metrics_df[["Accuracy", "Precision", "Recall", "F1 Score"]].plot(
@@ -232,7 +230,6 @@ elif page == "Models":
 
     st.markdown("---")
 
-    # Confusion matrices
     st.subheader("Confusion Matrices")
     cols = st.columns(3)
     for idx, (name, res) in enumerate(results.items()):
@@ -259,32 +256,31 @@ elif page == "Predict":
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        applicant_income   = st.number_input("Applicant Income",   min_value=0, value=5000, step=500)
-        coapplicant_income = st.number_input("Co-applicant Income", min_value=0, value=0,   step=500)
-        loan_amount        = st.number_input("Loan Amount",         min_value=0, value=150000, step=5000)
-        loan_term          = st.number_input("Term (months)",       min_value=1, value=120, step=12)
-        dti_ratio          = st.slider("DTI Ratio",                 0.0, 1.0, 0.35, 0.01)
+        applicant_income   = st.number_input("Applicant Income",    min_value=0, value=5000,   step=500)
+        coapplicant_income = st.number_input("Co-applicant Income", min_value=0, value=0,      step=500)
+        loan_amount        = st.number_input("Loan Amount",          min_value=0, value=150000, step=5000)
+        loan_term          = st.number_input("Term (months)",        min_value=1, value=120,    step=12)
+        dti_ratio          = st.slider("DTI Ratio",                  0.0, 1.0, 0.35, 0.01)
 
     with col2:
-        age                = st.number_input("Age",        min_value=18, max_value=80, value=35)
-        loan_purpose       = st.selectbox("Purpose",       ["Home", "Education", "Business", "Personal", "Other"])
-        savings            = st.number_input("Savings",    min_value=0, value=10000, step=1000)
-        collateral_value   = st.number_input("Collateral Value", min_value=0, value=50000, step=5000)
-        credit_score       = st.number_input("Credit Score", min_value=300, max_value=900, value=650)
+        age              = st.number_input("Age",           min_value=18, max_value=80, value=35)
+        loan_purpose     = st.selectbox("Purpose",          ["Home", "Education", "Business", "Personal", "Other"])
+        savings          = st.number_input("Savings",       min_value=0, value=10000, step=1000)
+        collateral_value = st.number_input("Collateral Value", min_value=0, value=50000, step=5000)
+        credit_score     = st.number_input("Credit Score",  min_value=300, max_value=900, value=650)
 
     with col3:
-        dependents         = st.number_input("Dependents",    min_value=0, max_value=10, value=0)
-        property_area      = st.selectbox("Property Area",    ["Urban", "Rural", "Semiurban"])
-        employment_status  = st.selectbox("Employment Status",["Employed", "Self-Employed", "Unemployed"])
-        education_level    = st.selectbox("Education Level",  ["Graduate", "Not Graduate"])
-        gender             = st.selectbox("Gender",           ["Male", "Female"])
-        marital_status     = st.selectbox("Marital Status",   ["Married", "Single", "Divorced"])
-        employer_category  = st.selectbox("Employer Category",["Government", "Private", "NGO"])
-        existing_loans     = st.number_input("Existing Loans", min_value=0, max_value=10, value=0)
+        dependents        = st.number_input("Dependents",       min_value=0, max_value=10, value=0)
+        property_area     = st.selectbox("Property Area",       ["Urban", "Rural", "Semiurban"])
+        employment_status = st.selectbox("Employment Status",   ["Employed", "Self-Employed", "Unemployed"])
+        education_level   = st.selectbox("Education Level",     ["Graduate", "Not Graduate"])
+        gender            = st.selectbox("Gender",              ["Male", "Female"])
+        marital_status    = st.selectbox("Marital Status",      ["Married", "Single", "Divorced"])
+        employer_category = st.selectbox("Employer Category",   ["Government", "Private", "NGO"])
+        existing_loans    = st.number_input("Existing Loans",   min_value=0, max_value=10, value=0)
 
     if st.button("🔍 Predict", use_container_width=True):
-        # ── Build raw input dict ──────────────────────────────────────────────
-        edu_encoded = 1 if education_level == "Graduate" else 0  # matches LabelEncoder on sorted order
+        edu_encoded = 1 if education_level == "Graduate" else 0
 
         ohe_input = pd.DataFrame([{
             "Employment_Status":  employment_status,
@@ -300,7 +296,6 @@ elif page == "Predict":
              "Property_Area", "Gender", "Employer_Category"]
         ))
 
-        # Feature engineering
         dti_sq    = dti_ratio ** 2
         credit_sq = credit_score ** 2
 
@@ -322,7 +317,6 @@ elif page == "Predict":
         input_df = pd.concat([base.reset_index(drop=True),
                               ohe_df.reset_index(drop=True)], axis=1)
 
-        # Align to training columns
         for col in feature_cols:
             if col not in input_df.columns:
                 input_df[col] = 0
@@ -330,9 +324,9 @@ elif page == "Predict":
 
         input_scaled = scaler.transform(input_df)
 
-        model    = trained_models[model_choice]
-        pred     = model.predict(input_scaled)[0]
-        prob     = model.predict_proba(input_scaled)[0]
+        model = trained_models[model_choice]
+        pred  = model.predict(input_scaled)[0]
+        prob  = model.predict_proba(input_scaled)[0]
 
         st.markdown("---")
         st.subheader("Result")
@@ -347,7 +341,6 @@ elif page == "Predict":
         with c2:
             st.metric("Rejection Probability", f"{prob[0]*100:.1f}%")
 
-        # Probability bar
         fig, ax = plt.subplots(figsize=(6, 1.5))
         ax.barh([""], [prob[1]], color="#66bb6a", label="Approved")
         ax.barh([""], [prob[0]], left=[prob[1]], color="#ef5350", label="Rejected")
